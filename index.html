@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>CineStream Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #050505; color: white; -webkit-tap-highlight-color: transparent; }
+        .ios-blur { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        iframe { border: none; width: 100%; height: 100%; }
+    </style>
+</head>
+<body class="font-sans">
+
+    <header class="fixed top-0 w-full z-50 p-4 flex justify-between items-center ios-blur bg-black/50">
+        <h1 class="text-xl font-bold tracking-tighter text-red-600">CINEBY</h1>
+        <button onclick="closePlayer()" id="backBtn" class="hidden text-sm bg-white/10 px-4 py-1 rounded-full">Back</button>
+    </header>
+
+    <main id="main-content" class="pt-20 px-4">
+        <h2 class="text-lg font-semibold mb-4 text-gray-400">Trending Now</h2>
+        <div id="movie-grid" class="grid grid-cols-2 gap-4">
+            </div>
+    </main>
+
+    <div id="player-container" class="fixed inset-0 z-[60] bg-black hidden">
+        <div id="iframe-wrapper" class="w-full h-full"></div>
+    </div>
+
+    <script>
+        // Example Movie List (Replace with TMDB API fetch later)
+        const movies = [
+            { id: 1078605, title: "Example Movie", poster: "https://via.placeholder.com/300x450/222/fff?text=Poster" },
+            { id: 763212, title: "Movie Two", poster: "https://via.placeholder.com/300x450/222/fff?text=Poster" }
+        ];
+
+        const grid = document.getElementById('movie-grid');
+        const playerContainer = document.getElementById('player-container');
+        const iframeWrapper = document.getElementById('iframe-wrapper');
+        const backBtn = document.getElementById('backBtn');
+
+        // Initialize Grid
+        movies.forEach(movie => {
+            const card = document.createElement('div');
+            card.className = "relative rounded-lg overflow-hidden bg-zinc-900 aspect-[2/3]";
+            card.innerHTML = `<img src="${movie.poster}" class="w-full h-full object-cover">
+                              <div onclick="openPlayer(${movie.id})" class="absolute inset-0 bg-black/20"></div>`;
+            grid.appendChild(card);
+        });
+
+        function openPlayer(tmdbId) {
+            const embedUrl = `https://www.vidking.net/embed/movie/${tmdbId}?color=ff0000&autoPlay=true`;
+            iframeWrapper.innerHTML = `<iframe src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
+            playerContainer.classList.remove('hidden');
+            backBtn.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Lock scrolling
+        }
+
+        function closePlayer() {
+            iframeWrapper.innerHTML = '';
+            playerContainer.classList.add('hidden');
+            backBtn.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Handle Player Events (Watch Progress)
+        window.addEventListener("message", (event) => {
+            if (typeof event.data === "string") {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === "PLAYER_EVENT" && data.data.event === "timeupdate") {
+                        console.log("Current Progress:", data.data.currentTime);
+                        // Save to localStorage like you would with Office Scripts
+                        localStorage.setItem(`pos_${data.data.id}`, data.data.currentTime);
+                    }
+                } catch(e) {}
+            }
+        });
+    </script>
+</body>
+</html>
