@@ -5,80 +5,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>CineStream Mobile</title>
+    <title>Vidking Stream</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050505; color: white; -webkit-tap-highlight-color: transparent; }
-        .ios-blur { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-        iframe { border: none; width: 100%; height: 100%; }
+        body { background-color: #000; color: white; -webkit-tap-highlight-color: transparent; }
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .video-container iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body class="font-sans">
 
-    <header class="fixed top-0 w-full z-50 p-4 flex justify-between items-center ios-blur bg-black/50">
-        <h1 class="text-xl font-bold tracking-tighter text-red-600">CINEBY</h1>
-        <button onclick="closePlayer()" id="backBtn" class="hidden text-sm bg-white/10 px-4 py-1 rounded-full">Back</button>
+    <header class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-md safe-top">
+        <div class="px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-tighter text-white">VID<span class="text-red-600">KING</span></h1>
+            <div id="player-controls" class="hidden">
+                <button onclick="closeStream()" class="bg-white/10 hover:bg-white/20 px-4 py-1 rounded-full text-sm font-medium transition">Close</button>
+            </div>
+        </div>
     </header>
 
-    <main id="main-content" class="pt-20 px-4">
-        <h2 class="text-lg font-semibold mb-4 text-gray-400">Trending Now</h2>
-        <div id="movie-grid" class="grid grid-cols-2 gap-4">
+    <main id="library" class="pt-24 pb-12 px-6">
+        <h2 class="text-gray-400 text-xs uppercase tracking-widest font-bold mb-4">Featured Collection</h2>
+        <div id="movie-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             </div>
     </main>
 
-    <div id="player-container" class="fixed inset-0 z-[60] bg-black hidden">
-        <div id="iframe-wrapper" class="w-full h-full"></div>
+    <div id="player-overlay" class="fixed inset-0 z-[100] bg-black hidden flex items-center justify-center">
+        <div id="stream-wrapper" class="w-full h-full video-container">
+            </div>
     </div>
 
     <script>
-        // Example Movie List (Replace with TMDB API fetch later)
-        const movies = [
-            { id: 1078605, title: "Example Movie", poster: "https://via.placeholder.com/300x450/222/fff?text=Poster" },
-            { id: 763212, title: "Movie Two", poster: "https://via.placeholder.com/300x450/222/fff?text=Poster" }
+        /** * MOVIE DATA OBJECT
+         * You can add more movies here. Use TMDB IDs.
+         */
+        const myLibrary = [
+            { id: 1078605, title: "Oppenheimer", poster: "https://image.tmdb.org/t/p/w500/8Gxv0mYmUpeqXORSok0oOU0oxS9.jpg" },
+            { id: 671, title: "Harry Potter", poster: "https://image.tmdb.org/t/p/w500/wuMc08IPG7jb20gnqYwbdpsvCwu.jpg" },
+            { id: 157336, title: "Interstellar", poster: "https://image.tmdb.org/t/p/w500/gEU2QniE6EwfVnz6nuzpczhjeHh.jpg" },
+            { id: 299534, title: "Endgame", poster: "https://image.tmdb.org/t/p/w500/or06vS3neeBSpaceXvS60B1j7XW.jpg" }
         ];
 
         const grid = document.getElementById('movie-grid');
-        const playerContainer = document.getElementById('player-container');
-        const iframeWrapper = document.getElementById('iframe-wrapper');
-        const backBtn = document.getElementById('backBtn');
+        const overlay = document.getElementById('player-overlay');
+        const wrapper = document.getElementById('stream-wrapper');
+        const controls = document.getElementById('player-controls');
 
-        // Initialize Grid
-        movies.forEach(movie => {
-            const card = document.createElement('div');
-            card.className = "relative rounded-lg overflow-hidden bg-zinc-900 aspect-[2/3]";
-            card.innerHTML = `<img src="${movie.poster}" class="w-full h-full object-cover">
-                              <div onclick="openPlayer(${movie.id})" class="absolute inset-0 bg-black/20"></div>`;
-            grid.appendChild(card);
-        });
-
-        function openPlayer(tmdbId) {
-            const embedUrl = `https://www.vidking.net/embed/movie/${tmdbId}?color=ff0000&autoPlay=true`;
-            iframeWrapper.innerHTML = `<iframe src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
-            playerContainer.classList.remove('hidden');
-            backBtn.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Lock scrolling
+        // Build the UI Grid
+        function initApp() {
+            myLibrary.forEach(movie => {
+                const card = document.createElement('div');
+                card.className = "group relative cursor-pointer active:scale-95 transition-transform";
+                card.onclick = () => launchStream(movie.id);
+                
+                card.innerHTML = `
+                    <div class="aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 shadow-2xl">
+                        <img src="${movie.poster}" class="w-full h-full object-cover" alt="${movie.title}" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                            <p class="text-xs font-semibold">${movie.title}</p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        function closePlayer() {
-            iframeWrapper.innerHTML = '';
-            playerContainer.classList.add('hidden');
-            backBtn.classList.add('hidden');
-            document.body.style.overflow = 'auto';
+        // Logic to trigger the Vidking API
+        function launchStream(tmdbId) {
+            // Using the API format: https://www.vidking.net/embed/movie/{id}
+            const streamUrl = `https://www.vidking.net/embed/movie/${tmdbId}?color=ff0000&autoPlay=true`;
+            
+            wrapper.innerHTML = `<iframe src="${streamUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+            overlay.classList.remove('hidden');
+            controls.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
         }
 
-        // Handle Player Events (Watch Progress)
-        window.addEventListener("message", (event) => {
-            if (typeof event.data === "string") {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === "PLAYER_EVENT" && data.data.event === "timeupdate") {
-                        console.log("Current Progress:", data.data.currentTime);
-                        // Save to localStorage like you would with Office Scripts
-                        localStorage.setItem(`pos_${data.data.id}`, data.data.currentTime);
-                    }
-                } catch(e) {}
-            }
-        });
+        function closeStream() {
+            wrapper.innerHTML = '';
+            overlay.classList.add('hidden');
+            controls.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        initApp();
     </script>
 </body>
 </html>
